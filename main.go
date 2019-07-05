@@ -42,7 +42,7 @@ func main() {
 	kingpin.Version(version.Get())
 	kingpin.Parse()
 
-	// Logging
+	// Initialise Logging
 	if *dev {
 		log.Level(zerolog.InfoLevel)
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
@@ -55,56 +55,93 @@ func main() {
 		log.Debug().Msg("Set logging to verbose")
 	}
 
-	// Rabbit MQ
-	rabbitMq, err := rabbitMQ.NewClient(rabbitMqHost, rabbitMqPort, rabbitMqUser, rabbitMqPassword)
+	// Initialise Rabbit MQ
+	rabbitMqClient, err := rabbitMQ.NewClient(rabbitMqHost, rabbitMqPort, rabbitMqUser, rabbitMqPassword)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to connect to RabbitMQ")
 	}
-	defer rabbitMq.Close()
+	defer rabbitMqClient.Close()
 
-	/*
-		env := &config.Env{
-			RabbitMQ: rabbitMq,
-		}
-	*/
-	// Watcher to report changes to the given folder path
-	w := watcher.New()
+	// Initialise folder watcher that will raise events for us
+	folderWatcher := watcher.New()
 
 	// SetMaxEvents to 1 to allow at most 1 event's to be received
 	// on the Event channel per watching cycle.
 	// If SetMaxEvents is not set, the default is to send all events.
-	w.SetMaxEvents(1)
+	folderWatcher.SetMaxEvents(1)
 
 	// the events we want to be notified of
-	w.FilterOps(watcher.Rename, watcher.Move, watcher.Create, watcher.Remove)
+	folderWatcher.FilterOps(watcher.Rename, watcher.Move, watcher.Create, watcher.Remove)
 
 	go func() {
 		for {
 			select {
-			case event := <-w.Event:
-				// TODO send this to RabbitMQ
-				fmt.Printf("here %v", event) // Print the event's info.
-			case err := <-w.Error:
+			case event := <-folderWatcher.Event:
+				isDir := "false"
+				if event.FileInfo.IsDir() {
+					isDir = "true"
+				}
+				rabbitMqMessage := rabbitMQ.Message{
+					RoutingKey: "enquiries",
+					Data: rabbitMQ.FolderWatch{
+						Action: event.Op.String(),
+						Path:   event.Path,
+						IsDir:  isDir,
+					},
+				}
+				if *verbose {
+					log.Info().Msg(fmt.Sprintf("Sending message to RabbitMQ : %v", rabbitMqMessage))
+				}
+				err := rabbitMqClient.SendFolderWatchMessage(rabbitMqMessage)
+				if err != nil {
+					log.Fatal().Err(err).Msg(fmt.Sprintf("Error sending message to RabbitMQ : %v", rabbitMqMessage))
+				}
+			case err := <-folderWatcher.Error:
 				log.Fatal().Err(err).Msg(fmt.Sprintf("Error handling event for : %s", watchFolderPath))
-			case <-w.Closed:
+			case <-folderWatcher.Closed:
 				return
 			}
 		}
 	}()
 
 	// Watch the given folder for changes
-	if err := w.Add(*watchFolderPath); err != nil {
+	if err := folderWatcher.AddRecursive(*watchFolderPath); err != nil {
 		log.Fatal().Err(err).Msg(fmt.Sprintf("Error initialising folder to watch : %s", watchFolderPath))
 	}
-
+	/*
+		env := &config.Env{
+			FolderPath: watchFolderPath,
+			RabbitMQ:   rabbitMq,
+			Watcher:    folderWatcher,
+		}
+	*/
 	// Print a list of all of the files and folders currently being watched and their paths
-	for path, f := range w.WatchedFiles() {
-		// TODO send this to RabbitMQ
-		fmt.Printf("%s: %s\n", path, f.Name())
+	for path, f := range folderWatcher.WatchedFiles() {
+		isDir := "false"
+		if f.IsDir() {
+			isDir = "true"
+		}
+		rabbitMqMessage := rabbitMQ.Message{
+			RoutingKey: "enquiries",
+			Data: rabbitMQ.FolderWatch{
+				Action: "CREATE",
+				Path:   path,
+				IsDir:  isDir,
+			},
+		}
+		if *verbose {
+			log.Info().Msg(fmt.Sprintf("Sending message to RabbitMQ : %v", rabbitMqMessage))
+		}
+		err := rabbitMqClient.SendFolderWatchMessage(rabbitMqMessage)
+		if err != nil {
+			log.Fatal().Err(err).Msg(fmt.Sprintf("Error sending message to RabbitMQ : %v", rabbitMqMessage))
+		}
+		//		fmt.Printf(" - Name: %s | Path: %v | Size: %v | isDirectory: %v | ModTime: %v | Mode: %v \n",
+		//			f.Name(), path, f.Size(), f.IsDir(), f.ModTime(), f.Mode())
 	}
 
 	// Start the watching process - it'll check for changes every 100ms.
-	if err := w.Start(time.Millisecond * 100); err != nil {
+	if err := folderWatcher.Start(time.Millisecond * 100); err != nil {
 		log.Fatal().Err(err).Msg(fmt.Sprintf("Error watching the folder %s", watchFolderPath))
 	}
 }

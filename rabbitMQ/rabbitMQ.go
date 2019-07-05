@@ -17,14 +17,15 @@ type Client struct {
 // Message -
 type Message struct {
 	RoutingKey string
-	Data       FolderWatch `xml:"FileChange "`
+	Data       FolderWatch `xml:"Data"`
 }
 
 // FolderWatch -
 type FolderWatch struct {
 	XMLName xml.Name `xml:"FolderWatch"`
-	Type    string   `xml:"type"`
-	Name    string   `xml:"name"`
+	Action  string   `xml:"action"`
+	Path    string   `xml:"path"`
+	IsDir   string   `xml:"isDir"`
 }
 
 // NewClient -
