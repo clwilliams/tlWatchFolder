@@ -90,11 +90,11 @@ func main() {
 					},
 				}
 				if *verbose {
-					log.Info().Msg(fmt.Sprintf("Sending message to RabbitMQ : %v", rabbitMqMessage))
+					log.Info().Msg(fmt.Sprintf("Sending message to RabbitMQ : %#v", rabbitMqMessage))
 				}
 				err := rabbitMqClient.SendFolderWatchMessage(rabbitMqMessage)
 				if err != nil {
-					log.Fatal().Err(err).Msg(fmt.Sprintf("Error sending message to RabbitMQ : %v", rabbitMqMessage))
+					log.Fatal().Err(err).Msg(fmt.Sprintf("Error sending message to RabbitMQ : %#v", rabbitMqMessage))
 				}
 			case err := <-folderWatcher.Error:
 				log.Fatal().Err(err).Msg(fmt.Sprintf("Error handling event for : %s", watchFolderPath))
@@ -130,11 +130,11 @@ func main() {
 			},
 		}
 		if *verbose {
-			log.Info().Msg(fmt.Sprintf("Sending message to RabbitMQ : %v", rabbitMqMessage))
+			log.Info().Msg(fmt.Sprintf("Sending message to RabbitMQ : %#v", rabbitMqMessage))
 		}
 		err := rabbitMqClient.SendFolderWatchMessage(rabbitMqMessage)
 		if err != nil {
-			log.Fatal().Err(err).Msg(fmt.Sprintf("Error sending message to RabbitMQ : %v", rabbitMqMessage))
+			log.Fatal().Err(err).Msg(fmt.Sprintf("Error sending message to RabbitMQ : %#v", rabbitMqMessage))
 		}
 		//		fmt.Printf(" - Name: %s | Path: %v | Size: %v | isDirectory: %v | ModTime: %v | Mode: %v \n",
 		//			f.Name(), path, f.Size(), f.IsDir(), f.ModTime(), f.Mode())
