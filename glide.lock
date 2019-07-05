@@ -1,0 +1,18 @@
+hash: b45719e6db0b8a73bb3c850b7e02865f81a6d0ae29dba559f0a92541ff677c3d
+updated: 2019-07-05T08:09:09.953239285+01:00
+imports:
+- name: github.com/alecthomas/kingpin
+  version: 947dcec5ba9c011838740e680966fd7087a71d0d
+- name: github.com/alecthomas/template
+  version: a0175ee3bccc567396460bf5acd36800cb10c49c
+- name: github.com/alecthomas/units
+  version: 2efee857e7cfd4f3d0138cc3cbb1b4966962b93a
+- name: github.com/radovskyb/watcher
+  version: d8b41ca2397a9b5cfc26adb10edbbcde40187a87
+- name: github.com/rs/zerolog
+  version: acf3980132bfcdc48638724e6e3d9e5749b85999
+  subpackages:
+  - log
+- name: github.com/streadway/amqp
+  version: 75d898a42a940fbc854dfd1a4199eabdc00cf024
+testImports: []
