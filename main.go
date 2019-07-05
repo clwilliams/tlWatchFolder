@@ -3,13 +3,24 @@ package main
 import (
   "fmt"
   "log"
-  "os"
   "time"
   "github.com/radovskyb/watcher"
+  "github.com/alecthomas/kingpin"
+)
+
+const (
+	defaultrabbitMqPort = "3000"
+  defaultrabbitMqURL = "TODO"
+)
+
+var (
+  rabbitMqPort = kingpin.Flag("rabbitMqPort", "RabbitMQ port").Default(defaultrabbitMqPort).Envar("DEFAULT_RABBITMQ_PORT").String()
+  rabbitMqURL = kingpin.Flag("rabbitMqUrl", "RabbitMQ url").Default(defaultrabbitMqURL).Envar("DEFAULT_RABBITMQ_URL").String()
+  watchFolderPath = kingpin.Flag("watchFolderPath", "Path to watch file changes within").String()
 )
 
 func main() {
-  watchFolderPath := os.Args[1]
+  // watchFolderPath := os.Args[1]
   // watchFolderPath := "/Users/clairew/watch_me/2019/March"
 
   w := watcher.New()
@@ -37,7 +48,7 @@ func main() {
 	}()
 
 	// Watch the given folder for changes
-	if err := w.Add(watchFolderPath); err != nil {
+	if err := w.Add(*watchFolderPath); err != nil {
 		log.Fatalln(err)
 	}
 
