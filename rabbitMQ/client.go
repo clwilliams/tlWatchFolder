@@ -11,21 +11,7 @@ import (
 
 // Client wrapper for rabbitMQ
 type Client struct {
-	*amqp.Connection
-}
-
-// Message -
-type Message struct {
-	RoutingKey string
-	Data       FolderWatch `xml:"Data"`
-}
-
-// FolderWatch -
-type FolderWatch struct {
-	XMLName xml.Name `xml:"FolderWatch"`
-	Action  string   `xml:"action"`
-	Path    string   `xml:"path"`
-	IsDir   string   `xml:"isDir"`
+	Connection *amqp.Connection
 }
 
 // NewClient -
@@ -40,28 +26,16 @@ func NewClient(rabbitMqHost, rabbitMqPort, rabbitMqUser, rabbitMqPassword *strin
 	}, nil
 }
 
-// SendFolderWatchMessage - posts the XML message to RabbitMQ
-func (c *Client) SendFolderWatchMessage(msg Message) error {
-	xmlMsg, err := convertToXML(msg)
-	if err != nil {
-		return err
-	}
-	if err := send(c.Connection, msg.RoutingKey, xmlMsg); err != nil {
-		return err
-	}
-	return nil
-}
-
-// posts a message to RabbitMQ
-func send(conn *amqp.Connection, routingKey, body string) error {
-	ch, err := conn.Channel()
+// Send - posts a message to RabbitMQ
+func (client *Client) Send(exchange, routingKey, body string) error {
+	ch, err := client.Connection.Channel()
 	if err != nil {
 		return err
 	}
 	defer ch.Close()
 
 	if err := ch.Publish(
-		"magento",  // exchange
+		exchange,   // exchange
 		routingKey, // routing key
 		false,      // mandatory
 		false,      // immediate
@@ -76,9 +50,9 @@ func send(conn *amqp.Connection, routingKey, body string) error {
 }
 
 // converts the struct into the XML body for the RabbitMQ message
-func convertToXML(msg Message) (string, error) {
-	startMsg := `<?xml version="1.0" encoding="UTF-8"?>
-  <!DOCTYPE maginusQMSCreateNewCall SYSTEM "MaginusQMSCreateNewCall.dtd">`
+func convertToXML(msg Message, docType string) (string, error) {
+	startMsg := `<?xml version="1.0" encoding="UTF-8"?>`
+	startMsg += fmt.Sprintf(`<!DOCTYPE %s SYSTEM "%s.dtd"`, docType, docType)
 	output, err := xml.MarshalIndent(msg.Data, "  ", "    ")
 	if err != nil {
 		return "", err
