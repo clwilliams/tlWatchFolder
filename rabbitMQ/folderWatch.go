@@ -1,32 +1,26 @@
 package rabbitMQ
 
-import (
-	"encoding/xml"
-)
-
 // Message -
 type Message struct {
-  Exchange   string
+	Exchange   string
 	RoutingKey string
 	Data       FolderWatch `xml:"Data"`
 }
 
 // FolderWatch -
 type FolderWatch struct {
-	XMLName xml.Name `xml:"FolderWatch"`
-	Action  string   `xml:"action"`
-	Path    string   `xml:"path"`
-	IsDir   string   `xml:"isDir"`
+	Action string `json:"action"`
+	Path   string `json:"path"`
+	IsDir  string `json:"isDir"`
 }
 
 // SendFolderWatchMessage - posts the XML message to RabbitMQ
 func (c *Client) SendFolderWatchMessage(msg Message) error {
-  docType := "folderWatch.dtd"
-	xmlMsg, err := convertToXML(msg, docType)
+	jsonMsg, err := convertToJSON(msg)
 	if err != nil {
 		return err
 	}
-	if err := c.Send(msg.Exchange, msg.RoutingKey, xmlMsg); err != nil {
+	if err := c.Send(msg.Exchange, msg.RoutingKey, jsonMsg); err != nil {
 		return err
 	}
 	return nil

@@ -1,10 +1,9 @@
 package rabbitMQ
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
-
-	"encoding/xml"
 
 	"github.com/streadway/amqp"
 )
@@ -40,7 +39,7 @@ func (client *Client) Send(exchange, routingKey, body string) error {
 		false,      // mandatory
 		false,      // immediate
 		amqp.Publishing{
-			ContentType: "text/xml",
+			ContentType: "text/json",
 			Body:        []byte(body),
 			MessageId:   time.Now().String(),
 		}); err != nil {
@@ -49,13 +48,11 @@ func (client *Client) Send(exchange, routingKey, body string) error {
 	return nil
 }
 
-// converts the struct into the XML body for the RabbitMQ message
-func convertToXML(msg Message, docType string) (string, error) {
-	startMsg := `<?xml version="1.0" encoding="UTF-8"?>`
-	startMsg += fmt.Sprintf(`<!DOCTYPE %s SYSTEM "%s.dtd"`, docType, docType)
-	output, err := xml.MarshalIndent(msg.Data, "  ", "    ")
+// converts the struct into the JSON body for the RabbitMQ message
+func convertToJSON(msg Message) (string, error) {
+	startMsg, err := json.MarshalIndent(msg.Data, "  ", "    ")
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("%s\n%s", startMsg, output), nil
+	return string(startMsg), nil
 }

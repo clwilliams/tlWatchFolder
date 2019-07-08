@@ -20,7 +20,8 @@ const (
 	defaultRabbitMqUser       = "rabbitmq"
 	defaultRabbitMqPassword   = "rabbitmq"
 	defaultRabbitMqExchange   = "thirdlight"
-	defaultRabbitMqRoutingKey = "watcher_update"
+	defaultRabbitMqQueue      = "watcher"
+	defaultRabbitMqRoutingKey = "crud"
 )
 
 var (
@@ -31,6 +32,7 @@ var (
 	rabbitMqUser       = kingpin.Flag("rabbit-mq-user", "").Default(defaultRabbitMqUser).String()
 	rabbitMqPassword   = kingpin.Flag("rabbit-mq-password", "").Default(defaultRabbitMqPassword).String()
 	rabbitMqExchange   = kingpin.Flag("rabbit-mq-exchange", "").Default(defaultRabbitMqExchange).String()
+	rabbitMqQueue      = kingpin.Flag("rabbit-mq-queue", "").Default(defaultRabbitMqQueue).String()
 	rabbitMqRoutingKey = kingpin.Flag("rabbit-mq-routing-key", "").Default(defaultRabbitMqRoutingKey).String()
 	watchFolderPath    = kingpin.Flag("watchFolderPath", "Path to watch file changes within").String()
 )
@@ -79,7 +81,7 @@ func main() {
 					isDir = "true"
 				}
 				rabbitMqMessage := rabbitMQ.Message{
-					Exchange: *rabbitMqExchange,
+					Exchange:   *rabbitMqExchange,
 					RoutingKey: *rabbitMqRoutingKey,
 					Data: rabbitMQ.FolderWatch{
 						Action: event.Op.String(),
@@ -114,7 +116,7 @@ func main() {
 			isDir = "true"
 		}
 		rabbitMqMessage := rabbitMQ.Message{
-			Exchange: *rabbitMqExchange,
+			Exchange:   *rabbitMqExchange,
 			RoutingKey: *rabbitMqRoutingKey,
 			Data: rabbitMQ.FolderWatch{
 				Action: "CREATE",
