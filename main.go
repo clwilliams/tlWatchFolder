@@ -70,6 +70,9 @@ func main() {
 	// Initialise folder watcher that will raise events for us
 	folderWatcher := watcher.New()
 
+  // ignore hidden files
+	folderWatcher.IgnoreHiddenFiles(true)
+
 	// the events we want to be notified of
 	folderWatcher.FilterOps(watcher.Rename, watcher.Move, watcher.Create, watcher.Remove)
 
