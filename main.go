@@ -11,7 +11,7 @@ import (
 	"github.com/radovskyb/watcher"
 	"github.com/rs/zerolog"
 	log "github.com/rs/zerolog/log"
-	"github.com/watch/rabbitMQ"
+	"github.com/tlCommonMessaging/rabbitMQ"
 )
 
 const (
@@ -60,11 +60,12 @@ func main() {
 	}
 
 	// Initialise Rabbit MQ
-	rabbitMqClient, err := rabbitMQ.NewClient(rabbitMqHost, rabbitMqPort, rabbitMqUser, rabbitMqPassword)
+	rabbitMQClient := rabbitMQ.MessageClient{}
+	err := rabbitMQClient.Connect(rabbitMqHost, rabbitMqPort, rabbitMqUser, rabbitMqPassword)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to connect to RabbitMQ")
 	}
-	defer rabbitMqClient.Connection.Close()
+	defer rabbitMQClient.Connection.Close()
 
 	// Initialise folder watcher that will raise events for us
 	folderWatcher := watcher.New()
@@ -80,21 +81,18 @@ func main() {
 				if event.FileInfo.IsDir() {
 					isDir = "true"
 				}
-				rabbitMqMessage := rabbitMQ.Message{
-					Exchange:   *rabbitMqExchange,
-					RoutingKey: *rabbitMqRoutingKey,
-					Data: rabbitMQ.FolderWatch{
-						Action: event.Op.String(),
-						Path:   event.Path,
-						IsDir:  isDir,
-					},
+				rabbitMqMessage := rabbitMQ.FolderWatchMessage{
+					WatchFolder: *watchFolderPath,
+					Action:      event.Op.String(),
+					Path:        event.Path,
+					IsDir:       isDir,
 				}
 				if *verbose {
-					log.Info().Msg(fmt.Sprintf("Sending message to RabbitMQ : %#v", rabbitMqMessage))
+					log.Info().Msg(fmt.Sprintf("Sending message : %#v", rabbitMqMessage))
 				}
-				err := rabbitMqClient.SendFolderWatchMessage(rabbitMqMessage)
+				err := rabbitMqMessage.PostToQueue(rabbitMqExchange, rabbitMqRoutingKey, &rabbitMQClient)
 				if err != nil {
-					log.Fatal().Err(err).Msg(fmt.Sprintf("Error sending message to RabbitMQ : %#v", rabbitMqMessage))
+					log.Fatal().Err(err).Msg(fmt.Sprintf("Error sending message : %#v", rabbitMqMessage))
 				}
 			case err := <-folderWatcher.Error:
 				log.Fatal().Err(err).Msg(fmt.Sprintf("Error handling event for : %s", *watchFolderPath))
@@ -109,25 +107,22 @@ func main() {
 		log.Fatal().Err(err).Msg(fmt.Sprintf("Error initialising folder to watch : %s", *watchFolderPath))
 	}
 
-	// Print a list of all of the files and folders currently being watched and their paths
+	// Send a list of all of the files and folders currently being watched and their paths
 	for path, f := range folderWatcher.WatchedFiles() {
 		isDir := "false"
 		if f.IsDir() {
 			isDir = "true"
 		}
-		rabbitMqMessage := rabbitMQ.Message{
-			Exchange:   *rabbitMqExchange,
-			RoutingKey: *rabbitMqRoutingKey,
-			Data: rabbitMQ.FolderWatch{
-				Action: "CREATE",
-				Path:   path,
-				IsDir:  isDir,
-			},
+		rabbitMqMessage := rabbitMQ.FolderWatchMessage{
+			WatchFolder: *watchFolderPath,
+			Action:      "CREATE",
+			Path:        path,
+			IsDir:       isDir,
 		}
 		if *verbose {
 			log.Info().Msg(fmt.Sprintf("Sending message to RabbitMQ : %#v", rabbitMqMessage))
 		}
-		err := rabbitMqClient.SendFolderWatchMessage(rabbitMqMessage)
+		err := rabbitMqMessage.PostToQueue(rabbitMqExchange, rabbitMqRoutingKey, &rabbitMQClient)
 		if err != nil {
 			log.Fatal().Err(err).Msg(fmt.Sprintf("Error sending message to RabbitMQ : %#v", rabbitMqMessage))
 		}
