@@ -5,8 +5,6 @@ import (
 	"os"
 	"time"
 
-	stdlog "log"
-
 	"github.com/alecthomas/kingpin"
 	"github.com/radovskyb/watcher"
 	"github.com/rs/zerolog"
@@ -46,13 +44,18 @@ func main() {
 	// parse the command line arguments
 	kingpin.Parse()
 
+  // check a folder path is passed in (the watcher code will error if it's not a valid path)
+	if (*watchFolderPath == "") {
+		log.Fatal().Msg("ERROR: You need to pass in a folder path to watch, use the --watchFolderPath flag")
+	}
+
 	// Initialise Logging
+	// defaulted to warn level; if in dev environment, default to info
+	// if verbose flag is set, log to debug level (handy for seeing the es query JSON)
 	if *dev {
 		log.Level(zerolog.InfoLevel)
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	}
-	stdlog.SetFlags(0)
-	stdlog.SetOutput(log.Logger)
 
 	if *verbose {
 		log.Level(zerolog.DebugLevel)
@@ -113,7 +116,8 @@ func main() {
 
 	// Watch the given folder for changes
 	if err := folderWatcher.AddRecursive(*watchFolderPath); err != nil {
-		log.Fatal().Err(err).Msg(fmt.Sprintf("Error initialising folder to watch : %s", *watchFolderPath))
+		log.Fatal().Err(err).Msg(fmt.Sprintf(
+			"Error initialising folder to watch : %s", *watchFolderPath))
 	}
 
 	// Send a list of all of the files and folders currently being watched and their paths
