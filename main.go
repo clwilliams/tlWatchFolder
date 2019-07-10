@@ -67,10 +67,16 @@ func main() {
 	}
 	defer rabbitMQClient.Connection.Close()
 
+	err = rabbitMQClient.ConfigureChannelAndExchange(rabbitMqExchange)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to configure RabbitMQ Channel / Exchange")
+	}
+	defer rabbitMQClient.Channel.Close()
+
 	// Initialise folder watcher that will raise events for us
 	folderWatcher := watcher.New()
 
-  // ignore hidden files
+	// ignore hidden files
 	folderWatcher.IgnoreHiddenFiles(true)
 
 	// the events we want to be notified of
