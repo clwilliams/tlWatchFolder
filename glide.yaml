@@ -1,13 +1,13 @@
-package: github.com/watch
+package: github.com/clwilliams/tlWatchFolder
 import:
-- package: github.com/streadway/amqp
 - package: github.com/alecthomas/kingpin
   version: ^2.2.6
+- package: github.com/clwilliams/tlCommonMessaging
+  subpackages:
+  - rabbitMQ
 - package: github.com/radovskyb/watcher
   version: ^1.0.6
 - package: github.com/rs/zerolog
-  version: ^1.12.0
+  version: ^1.14.3
   subpackages:
   - log
-- package: github.com/alecthomas/template
-- package: github.com/alecthomas/units

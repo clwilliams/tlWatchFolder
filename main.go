@@ -9,7 +9,7 @@ import (
 	"github.com/radovskyb/watcher"
 	"github.com/rs/zerolog"
 	log "github.com/rs/zerolog/log"
-	"github.com/tlCommonMessaging/rabbitMQ"
+	"github.com/clwilliams/tlCommonMessaging/rabbitMQ"
 )
 
 const (
